@@ -1,3 +1,5 @@
+import sys
+
 def generate(file: str) -> list:
     """ Generate the sequence from input files
 
@@ -24,7 +26,6 @@ def generate(file: str) -> list:
                     insert_position = []
                 subseq = line
         seq_dict[subseq] = insert_position
-    # print(seq_dict)
     
     # Build sequence
     ret = []
@@ -32,12 +33,14 @@ def generate(file: str) -> list:
         seq = k     # base
         for i in v:
             seq = seq[:i+1] + seq + seq[i+1:]
-            # print(seq)
         ret.append(seq)
     return ret
 
 
 if __name__ == "__main__":
-    print(generate("Datapoints/in15.txt"))
-    assert generate("Datapoints/test.txt")[0] == "ACACTGACTACTGACTGGTGACTACTGACTGG", ()
-    assert generate("Datapoints/test.txt")[1] == "TATTATACGCTATTATACGCGACGCGGACGCG", ()
+    pass
+    # if len(sys.argv) != 3:
+    #     print("Usage: python3 efficient.py input_path output_path", file=sys.stderr)
+    #     sys.exit(2)
+    # _, input_path, output_path = sys.argv
+    # generate(input_path)
