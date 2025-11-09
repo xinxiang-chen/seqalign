@@ -8,6 +8,7 @@ def generate(file: str) -> list:
         list: 2 generated substring, [seq1, seq2]
     """
 
+    # Read file and store data as a map: subsequence -> [insert position]
     seq_dict = {}
     with open(file) as f:
         subseq = ""
@@ -24,6 +25,8 @@ def generate(file: str) -> list:
                 subseq = line
         seq_dict[subseq] = insert_position
     # print(seq_dict)
+    
+    # Build sequence
     ret = []
     for k, v in seq_dict.items():
         seq = k     # base
