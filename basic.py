@@ -2,6 +2,7 @@ import sys
 from resource import * 
 import time
 import psutil
+import os
 
 
 class Basic:
@@ -59,6 +60,11 @@ class Basic:
                 m -= 1
         
         return seq1_aligned, seq2_aligned
+    
+    def basic(self):
+        cost = self.bottom_up()
+        seq1_aligned, seq2_aligned = self.top_down()
+        return seq1_aligned, seq2_aligned, cost
 
 def generate(file: str) -> list:
     """ Generate the sequence from input files
@@ -102,14 +108,43 @@ def process_memory():
     memory_consumed = int(memory_info.rss / 1024)  # in KB
     return memory_consumed
 
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        sys.exit(2)
-    _, input_path, output_path = sys.argv
+def time_wrapper(func, *args, **kwargs):
+    start_time = time.time()
+    result = func(*args, **kwargs)
+    end_time = time.time()
 
-    print(process_memory())
-    align = Basic('Datapoints/in1.txt')
-    align.bottom_up()
-    align.top_down()
-    print(process_memory())
+    time_taken_ms = (end_time - start_time) * 1000.0
+    return time_taken_ms, result
+
+def write_result(file_path, cost, align1, align2, time_ms, mem_kb):
+    with open(file_path, "w") as f:
+        f.write(f"{int(cost)}\n")
+        f.write(f"{align1}\n")
+        f.write(f"{align2}\n")
+        f.write(f"{float(time_ms):.3f}\n")
+        f.write(f"{float(mem_kb):.3f}\n")
+
+if __name__ == "__main__":
+    # if len(sys.argv) != 3:
+    #     sys.exit(2)
+    # _, input_path, output_path = sys.argv
+
+
+    # replace with shell script when packaging
+    input_dir = "Datapoints"
+    output_dir = "out/basic"
+    os.makedirs(output_dir, exist_ok=True)
+
+    for filename in os.listdir(input_dir):
+        if not filename.endswith(".txt"):
+            continue  # skip non-txt files
+        input_path = os.path.join(input_dir, filename)
+        base_name, _ = os.path.splitext(filename)
+        output_path = os.path.join(output_dir, f"{base_name}_out.txt")
+
+        align = Basic(input_path)
+        time_ms, (x_aln, y_aln, cost) = time_wrapper(align.basic)
+        mem = process_memory()
+
+        write_result(output_path, cost, x_aln, y_aln, time_ms, mem)
     

@@ -2,6 +2,7 @@ import sys
 from resource import * 
 import time
 import psutil
+import os
 from basic import Basic
 
 
@@ -130,9 +131,43 @@ def process_memory():
     memory_consumed = int(memory_info.rss / 1024)  # in KB
     return memory_consumed
 
+def time_wrapper(func, *args, **kwargs):
+    start_time = time.time()
+    result = func(*args, **kwargs)
+    end_time = time.time()
+
+    time_taken_ms = (end_time - start_time) * 1000.0
+    return time_taken_ms, result
+
+def write_result(file_path, cost, align1, align2, time_ms, mem_kb):
+    with open(file_path, "w") as f:
+        f.write(f"{int(cost)}\n")
+        f.write(f"{align1}\n")
+        f.write(f"{align2}\n")
+        f.write(f"{float(time_ms):.3f}\n")
+        f.write(f"{float(mem_kb):.3f}\n")
+
 
 if __name__ == "__main__":
-    print(process_memory())
-    align = Efficient('Datapoints/in1.txt')
-    align.efficient()
-    print(process_memory())
+    # if len(sys.argv) != 3:
+    #     sys.exit(2)
+    # _, input_path, output_path = sys.argv
+
+
+    # replace with shell script when packaging
+    input_dir = "Datapoints"
+    output_dir = "out/efficient"
+    os.makedirs(output_dir, exist_ok=True)
+
+    for filename in os.listdir(input_dir):
+        if not filename.endswith(".txt"):
+            continue  # skip non-txt files
+        input_path = os.path.join(input_dir, filename)
+        base_name, _ = os.path.splitext(filename)
+        output_path = os.path.join(output_dir, f"{base_name}_out.txt")
+
+        align = Efficient(input_path)
+        time_ms, (x_aln, y_aln, cost) = time_wrapper(align.efficient)
+        mem = process_memory()
+        
+        write_result(output_path, cost, x_aln, y_aln, time_ms, mem)
