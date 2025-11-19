@@ -56,8 +56,7 @@ class Basic:
         self.seq1 = seq1
         self.seq2 = seq2
 
-
-    def bottom_up(self):
+    def bottom_up(self):        # get the cost of alignment
         self.dp = [[0] * (len(self.seq2) + 1) for _ in range(len(self.seq1) + 1)]
         self.dp[0] = [self.delta * i for i in range(len(self.dp[0]))]
         for i in range(len(self.dp)):
@@ -94,7 +93,6 @@ class Basic:
                 (2, cell2)
             ]
             best_cell, _ = min(values, key=lambda x: x[1])
-            # print(best_cell)
 
             if best_cell == 0:      # seq2 is not matched(seq1 has a gap)
                 seq1_aligned = '_' + seq1_aligned
@@ -110,11 +108,7 @@ class Basic:
                 seq1_aligned = self.seq1[m - 1] + seq1_aligned
                 m -= 1
         
-
-        # print(seq1_aligned)
-        # print(seq2_aligned)
         return seq1_aligned, seq2_aligned
-        pass
 
 
 class Efficient:
@@ -141,8 +135,6 @@ class Efficient:
         for i in range(1, len(xL) + 1):
             new_xL_row = [i * self.delta] + [0] * len(y)
             for j in range(1, len(new_xL_row)):
-                # print(self.seq1[i - 1], self.seq2[j - 1])
-                # print(xL_row)
                 new_xL_row[j] = min(
                                         xL_row[j-1] + self.alpha[self.seq1[i - 1]][self.seq2[j - 1]],   # x_m, y_n are aligned
                                         xL_row[j] + self.delta,                                         # x_m is not matched
@@ -158,6 +150,12 @@ class Efficient:
         return self.xL_align_with_y_cost(xR_reversed, y_reversed)[::-1]
 
     def rec_efficient(self, x, y):
+        '''
+        1. split x at middle 
+        2. calculate cost for left and right (signle row)
+        3. iterate every points in y, find best point k
+        4. conquer split at best k
+        '''
         m = len(x)
         n = len(y)
 
@@ -175,11 +173,8 @@ class Efficient:
         # devide step: devide X in 1/2
         xL = x[:m // 2]
         xR = x[m // 2:]
-        print()
-        print(xL)
-        print(y)
-        
 
+        # create memory-efficient dp table
         xL_row = self.xL_align_with_y_cost(xL, y)
         xR_row = self.xR_align_with_y_cost(xR, y)
 
@@ -199,12 +194,7 @@ class Efficient:
     def efficient(self):
         x, y, z = self.rec_efficient(self.seq1, self.seq2)
         print(x, y, z)
-    '''
-    1. split x at middle 
-    2. calculate cost for left and right (signle row)
-    3. iterate every points in y, find best point k
-    4. conquer split at best k
-    '''
+
 
         
 
