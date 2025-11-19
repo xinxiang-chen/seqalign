@@ -61,7 +61,6 @@ class Basic:
         self.dp[0] = [self.delta * i for i in range(len(self.dp[0]))]
         for i in range(len(self.dp)):
             self.dp[i][0] = i * self.delta
-        print(self.dp)
 
         for m in range(1, len(self.dp)):
             for n in range(1, len(self.dp[0])):
@@ -72,38 +71,23 @@ class Basic:
         print(self.dp)
         return self.dp[-1][-1]
 
-    def top_down(self):
-        # cases:
-        # 0 -> from (m, n-1)        seq2 is not matched
-        # 1 -> from (m-1, n-1)      matched
-        # 2 -> from (m-1, n)        seq1 is not matched
+    def top_down(self):         # trace back
         m = len(self.dp) - 1
         n = len(self.dp[0]) - 1
         seq1_aligned = ''
         seq2_aligned = ''
 
         while m > 0 or n > 0:
-            cell0 = self.dp[m][n-1] + self.delta
-            cell1 = self.dp[m-1][n-1] + self.alpha[self.seq1[m - 1]][self.seq2[n - 1]]
-            cell2 = self.dp[m-1][n] + self.delta
-
-            values = [
-                (0, cell0),
-                (1, cell1),
-                (2, cell2)
-            ]
-            best_cell, _ = min(values, key=lambda x: x[1])
-
-            if best_cell == 0:      # seq2 is not matched(seq1 has a gap)
+            if n > 0 and self.dp[m][n] == self.dp[m][n-1] + self.delta:      # seq2 is not matched(seq1 has a gap)
                 seq1_aligned = '_' + seq1_aligned
                 seq2_aligned = self.seq2[n - 1] + seq2_aligned
                 n -= 1
-            elif best_cell == 1:    # matched
+            elif m > 0 and n > 0 and self.dp[m][n] == self.dp[m-1][n-1] + self.alpha[self.seq1[m - 1]][self.seq2[n - 1]]:    # matched
                 seq1_aligned = self.seq1[m - 1] + seq1_aligned
                 seq2_aligned = self.seq2[n - 1] + seq2_aligned
                 m -= 1
                 n -= 1
-            elif best_cell == 2:    # seq1 is not matched(seq2 has a gap)
+            elif m > 0 and self.dp[m][n] == self.dp[m-1][n] + self.delta:    # seq1 is not matched(seq2 has a gap)
                 seq2_aligned = '_' + seq2_aligned
                 seq1_aligned = self.seq1[m - 1] + seq1_aligned
                 m -= 1
@@ -130,24 +114,25 @@ class Efficient:
         self.seq1 = seq1
         self.seq2 = seq2
 
-    def xL_align_with_y_cost(self, xL, y):
-        xL_row = [self.delta * i for i in range(len(y) + 1)]
+    def xL_align_with_y_cost(self, xL, y):      # create the mem-efficient table with mem space O(len(y))
+        xL_row = [self.delta * i for i in range(len(y) + 1)]        # previous row
         for i in range(1, len(xL) + 1):
-            new_xL_row = [i * self.delta] + [0] * len(y)
+            new_xL_row = [i * self.delta] + [0] * len(y)            # current row
             for j in range(1, len(new_xL_row)):
-                new_xL_row[j] = min(
-                                        xL_row[j-1] + self.alpha[self.seq1[i - 1]][self.seq2[j - 1]],   # x_m, y_n are aligned
+                new_xL_row[j] = min(    # here, replace[i-1] with xL_row, which is the previous row
+                                        xL_row[j-1] + self.alpha[xL[i - 1]][y[j - 1]],   # x_m, y_n are aligned
                                         xL_row[j] + self.delta,                                         # x_m is not matched
                                         new_xL_row[j-1] + self.delta                                    # y_n is not matched
                                     )
             xL_row = new_xL_row
-            print(xL_row)
         return xL_row
     
-    def xR_align_with_y_cost(self, xR, y):
+    def xR_align_with_y_cost(self, xR, y):      # reverse: convert the xR and y to prefix style
         xR_reversed = xR[::-1]
         y_reversed = y[::-1]
-        return self.xL_align_with_y_cost(xR_reversed, y_reversed)[::-1]
+
+        # reverse this before sum up xL and xR rows, that we can add two row up directly without iteration
+        return self.xL_align_with_y_cost(xR_reversed, y_reversed)[::-1]     
 
     def rec_efficient(self, x, y):
         '''
@@ -159,6 +144,7 @@ class Efficient:
         m = len(x)
         n = len(y)
 
+        # base case
         if m == 0:
             return '_' * n, y, self.delta * n
         if n == 0:
@@ -178,13 +164,10 @@ class Efficient:
         xL_row = self.xL_align_with_y_cost(xL, y)
         xR_row = self.xR_align_with_y_cost(xR, y)
 
-        best_split_point = 0
-        best_value = float('inf')
-        for i in range(len(xL_row)):
-            value = xL_row[i] + xR_row[i]
-            if value < best_value:
-                best_value = value
-                best_split_point = i
+        # add up xL and xR rows, find min value, which is the best split point
+        x_row_sum = [a + b for a, b in zip(xL_row, xR_row)]
+        best_value = min(x_row_sum)
+        best_split_point = x_row_sum.index(best_value)
         
         xL_align, yL_align, costL = self.rec_efficient(xL, y[:best_split_point])
         xR_align, yR_align, costR = self.rec_efficient(xR, y[best_split_point:])
@@ -196,18 +179,10 @@ class Efficient:
         print(x, y, z)
 
 
-        
-
 if __name__ == "__main__":
-    pass
-
-    align = Basic('Datapoints/in1.txt')
-    align.set_seqs('ACTG', 'ACCC')
-    print(align.seq1)
-    print(align.seq2)
+    align = Basic('Datapoints/in2.txt')
     align.bottom_up()
-    align.top_down()
+    print(align.top_down())
 
-    align_e = Efficient()
-    align_e.set_seqs('ACTG', 'ACCC')
+    align_e = Efficient('Datapoints/in2.txt')
     align_e.efficient()
