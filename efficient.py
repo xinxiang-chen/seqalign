@@ -1,4 +1,92 @@
 import sys
+from resource import * 
+import time
+import psutil
+from basic import Basic
+
+
+class Efficient:
+    delta = 30      # gap cost
+    alpha = {       # mismatch cost table
+        'A': {'A': 0, 'C': 110, 'G': 48, 'T': 94},
+        'C': {'A': 110, 'C': 0, 'G': 118, 'T': 48},
+        'G': {'A': 48, 'C': 118, 'G': 0, 'T': 110},
+        'T': {'A': 94, 'C': 48, 'G': 110, 'T': 0}
+    }
+
+    def __init__(self, file_path=None):
+        if file_path is None:
+            self.seq1, self.seq2 = '', ''
+        else:
+            self.seq1, self.seq2 = generate(file_path)
+
+    def set_seqs(self, seq1, seq2):
+        self.seq1 = seq1
+        self.seq2 = seq2
+
+    def xL_align_with_y_cost(self, xL, y):      # create the mem-efficient table with mem space O(len(y))
+        xL_row = [self.delta * i for i in range(len(y) + 1)]        # previous row
+        for i in range(1, len(xL) + 1):
+            new_xL_row = [i * self.delta] + [0] * len(y)            # current row
+            for j in range(1, len(new_xL_row)):
+                new_xL_row[j] = min(    # here, replace[i-1] with xL_row, which is the previous row
+                                        xL_row[j-1] + self.alpha[xL[i - 1]][y[j - 1]],   # x_m, y_n are aligned
+                                        xL_row[j] + self.delta,                                         # x_m is not matched
+                                        new_xL_row[j-1] + self.delta                                    # y_n is not matched
+                                    )
+            xL_row = new_xL_row
+        return xL_row
+    
+    def xR_align_with_y_cost(self, xR, y):      # reverse: convert the xR and y to prefix style
+        xR_reversed = xR[::-1]
+        y_reversed = y[::-1]
+
+        # reverse this before sum up xL and xR rows, that we can add two row up directly without iteration
+        return self.xL_align_with_y_cost(xR_reversed, y_reversed)[::-1]     
+
+    def rec_efficient(self, x, y):
+        '''
+        1. split x at middle 
+        2. calculate cost for left and right (signle row)
+        3. iterate every points in y, find best point k
+        4. conquer split at best k
+        '''
+        m = len(x)
+        n = len(y)
+
+        # base case
+        if m == 0:
+            return '_' * n, y, self.delta * n
+        if n == 0:
+            return x, '_' * m, self.delta * m
+        if m == 1 or n == 1:
+            basicAlign = Basic()
+            basicAlign.set_seqs(x, y)
+            cost = basicAlign.bottom_up()
+            x_align, y_align = basicAlign.top_down()
+            return x_align, y_align, cost
+        
+        # devide step: devide X in 1/2
+        xL = x[:m // 2]
+        xR = x[m // 2:]
+
+        # create memory-efficient dp table
+        xL_row = self.xL_align_with_y_cost(xL, y)
+        xR_row = self.xR_align_with_y_cost(xR, y)
+
+        # add up xL and xR rows, find min value, which is the best split point
+        x_row_sum = [a + b for a, b in zip(xL_row, xR_row)]
+        best_value = min(x_row_sum)
+        best_split_point = x_row_sum.index(best_value)
+        
+        xL_align, yL_align, costL = self.rec_efficient(xL, y[:best_split_point])
+        xR_align, yR_align, costR = self.rec_efficient(xR, y[best_split_point:])
+
+        return xL_align + xR_align, yL_align + yR_align, costL + costR
+        
+    def efficient(self):
+        return self.rec_efficient(self.seq1, self.seq2)
+
 
 def generate(file: str) -> list:
     """ Generate the sequence from input files
@@ -36,11 +124,15 @@ def generate(file: str) -> list:
         ret.append(seq)
     return ret
 
+def process_memory():
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    memory_consumed = int(memory_info.rss / 1024)  # in KB
+    return memory_consumed
+
 
 if __name__ == "__main__":
-    pass
-    # if len(sys.argv) != 3:
-    #     print("Usage: python3 efficient.py input_path output_path", file=sys.stderr)
-    #     sys.exit(2)
-    # _, input_path, output_path = sys.argv
-    # generate(input_path)
+    print(process_memory())
+    align = Efficient('Datapoints/in1.txt')
+    align.efficient()
+    print(process_memory())

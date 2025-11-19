@@ -1,4 +1,7 @@
 import sys
+from resource import * 
+import time
+import psutil
 
 def generate(file: str) -> list:
     """ Generate the sequence from input files
@@ -68,7 +71,6 @@ class Basic:
                                     self.dp[m-1][n] + self.delta,   # x_m is not matched
                                     self.dp[m][n-1] + self.delta    # y_n is not matched
                                     )
-        print(self.dp)
         return self.dp[-1][-1]
 
     def top_down(self):         # trace back
@@ -175,14 +177,17 @@ class Efficient:
         return xL_align + xR_align, yL_align + yR_align, costL + costR
         
     def efficient(self):
-        x, y, z = self.rec_efficient(self.seq1, self.seq2)
-        print(x, y, z)
+        return self.rec_efficient(self.seq1, self.seq2)
 
+def process_memory():
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    memory_consumed = int(memory_info.rss / 1024)  # in KB
+    return memory_consumed
 
 if __name__ == "__main__":
-    align = Basic('Datapoints/in2.txt')
+    align = Basic('Datapoints/in1.txt')
     align.bottom_up()
-    print(align.top_down())
 
-    align_e = Efficient('Datapoints/in2.txt')
+    align_e = Efficient('Datapoints/in1.txt')
     align_e.efficient()
