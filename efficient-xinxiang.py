@@ -46,8 +46,11 @@ class Basic:
         'T': {'A': 94, 'C': 48, 'G': 110, 'T': 0},
     }
 
-    def __init__(self, file_path):
-        self.seq1, self.seq2 = generate(file_path)
+    def __init__(self, file_path=None):
+        if file_path is None:
+            self.seq1, self.seq2 = '', ''
+        else:
+            self.seq1, self.seq2 = generate(file_path)
 
     def set_seqs(self, seq1, seq2):
         self.seq1 = seq1
@@ -91,7 +94,7 @@ class Basic:
                 (2, cell2)
             ]
             best_cell, _ = min(values, key=lambda x: x[1])
-            print(best_cell)
+            # print(best_cell)
 
             if best_cell == 0:      # seq2 is not matched(seq1 has a gap)
                 seq1_aligned = '_' + seq1_aligned
@@ -108,11 +111,100 @@ class Basic:
                 m -= 1
         
 
-        print(seq1_aligned)
-        print(seq2_aligned)
-
-
+        # print(seq1_aligned)
+        # print(seq2_aligned)
+        return seq1_aligned, seq2_aligned
         pass
+
+
+class Efficient:
+    delta = 30      # gap cost
+    alpha = {       # mismatch cost table
+        'A': {'A': 0, 'C': 110, 'G': 48, 'T': 94},
+        'C': {'A': 110, 'C': 0, 'G': 118, 'T': 48},
+        'G': {'A': 48, 'C': 118, 'G': 0, 'T': 110},
+        'T': {'A': 94, 'C': 48, 'G': 110, 'T': 0}
+    }
+
+    def __init__(self, file_path=None):
+        if file_path is None:
+            self.seq1, self.seq2 = '', ''
+        else:
+            self.seq1, self.seq2 = generate(file_path)
+
+    def set_seqs(self, seq1, seq2):
+        self.seq1 = seq1
+        self.seq2 = seq2
+
+    def xL_align_with_y_cost(self, xL, y):
+        xL_row = [self.delta * i for i in range(len(y) + 1)]
+        for i in range(1, len(xL) + 1):
+            new_xL_row = [i * self.delta] + [0] * len(y)
+            for j in range(1, len(new_xL_row)):
+                # print(self.seq1[i - 1], self.seq2[j - 1])
+                # print(xL_row)
+                new_xL_row[j] = min(
+                                        xL_row[j-1] + self.alpha[self.seq1[i - 1]][self.seq2[j - 1]],   # x_m, y_n are aligned
+                                        xL_row[j] + self.delta,                                         # x_m is not matched
+                                        new_xL_row[j-1] + self.delta                                    # y_n is not matched
+                                    )
+            xL_row = new_xL_row
+            print(xL_row)
+        return xL_row
+    
+    def xR_align_with_y_cost(self, xR, y):
+        xR_reversed = xR[::-1]
+        y_reversed = y[::-1]
+        return self.xL_align_with_y_cost(xR_reversed, y_reversed)[::-1]
+
+    def rec_efficient(self, x, y):
+        m = len(x)
+        n = len(y)
+
+        if m == 0:
+            return '_' * n, y, self.delta * n
+        if n == 0:
+            return x, '_' * m, self.delta * m
+        if m == 1 or n == 1:
+            basicAlign = Basic()
+            basicAlign.set_seqs(x, y)
+            cost = basicAlign.bottom_up()
+            x_align, y_align = basicAlign.top_down()
+            return x_align, y_align, cost
+        
+        # devide step: devide X in 1/2
+        xL = x[:m // 2]
+        xR = x[m // 2:]
+        print()
+        print(xL)
+        print(y)
+        
+
+        xL_row = self.xL_align_with_y_cost(xL, y)
+        xR_row = self.xR_align_with_y_cost(xR, y)
+
+        best_split_point = 0
+        best_value = float('inf')
+        for i in range(len(xL_row)):
+            value = xL_row[i] + xR_row[i]
+            if value < best_value:
+                best_value = value
+                best_split_point = i
+        
+        xL_align, yL_align, costL = self.rec_efficient(xL, y[:best_split_point])
+        xR_align, yR_align, costR = self.rec_efficient(xR, y[best_split_point:])
+
+        return xL_align + xR_align, yL_align + yR_align, costL + costR
+        
+    def efficient(self):
+        x, y, z = self.rec_efficient(self.seq1, self.seq2)
+        print(x, y, z)
+    '''
+    1. split x at middle 
+    2. calculate cost for left and right (signle row)
+    3. iterate every points in y, find best point k
+    4. conquer split at best k
+    '''
 
         
 
@@ -120,8 +212,12 @@ if __name__ == "__main__":
     pass
 
     align = Basic('Datapoints/in1.txt')
-    align.set_seqs('ACCGGTCG', 'CCAGGTGGC')
+    align.set_seqs('ACTG', 'ACCC')
     print(align.seq1)
     print(align.seq2)
     align.bottom_up()
     align.top_down()
+
+    align_e = Efficient()
+    align_e.set_seqs('ACTG', 'ACCC')
+    align_e.efficient()
