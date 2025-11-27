@@ -34,8 +34,8 @@ def main(folder):
         line4 = lines[3].rstrip("\n")
         line5 = lines[4].rstrip("\n")
 
-        print(f"{line4}")
-        # print(f"{line5}")
+        # print(f"{line4}")
+        print(f"{line5}")
 
 if __name__ == "__main__":
     main('./Out/efficient')

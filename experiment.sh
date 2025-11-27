@@ -25,5 +25,5 @@ for infile in "$in_dir"/*.txt; do
     outfile="$out_dir/out${num}.txt"  # e.g. Out/basic/out1.txt
 
     echo "Running: python3 efficient.py \"$infile\" \"$outfile\""
-    python3 basic.py "$infile" "$outfile"
+    python3 efficient.py "$infile" "$outfile"
 done

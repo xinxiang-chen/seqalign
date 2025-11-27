@@ -34,7 +34,7 @@ def main(drawMem=False):
     plt.grid(True)
     plt.tight_layout()
     # plt.show()
-    plt.savefig('Out/time.png')
+    plt.savefig('Out/memory.png')
 
 if __name__ == "__main__":
-    main(drawMem=False)
+    main(drawMem=True)
